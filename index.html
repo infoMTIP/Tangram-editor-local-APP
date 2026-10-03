@@ -905,10 +905,12 @@ if (window.Vue && Object.keys(LANGS).length) createApp({
       const now = Date.now(), cats = (rawT('seed.categories') || []).slice();
       return { categories:cats, shapes:[{ id:uid(), name:t('seed.square'), category:cats[3] || '', pieces:makePieces(1), created:now, updated:now }] };
     };
+    let hadLocalData = false;
     const loadStore = () => {
       try {
         const raw = localStorage.getItem(STORE_KEY);
         if (raw) {
+          hadLocalData = true;
           const d = JSON.parse(raw);
           if (d && Array.isArray(d.shapes)) return { shapes:d.shapes.map(s => ({ ...s, pieces:normalizePieces(s.pieces) })), categories:Array.isArray(d.categories) ? d.categories : [] };
         }
@@ -967,7 +969,17 @@ if (window.Vue && Object.keys(LANGS).length) createApp({
         storage.mode = 'server';
         if (j.data && Array.isArray(j.data.shapes)) applyData(j.data);
         else await persist();        // první spuštění: založí tangram-data.json
-      } catch (e) { storage.mode = 'local'; }
+      } catch (e) { storage.mode = 'local'; loadBundledData(); }
+    }
+    // Bez PHP (např. GitHub Pages): při prvním spuštění načíst tangram-data.json ležící vedle aplikace
+    async function loadBundledData() {
+      if (hadLocalData || location.protocol === 'file:') return;
+      try {
+        const res = await fetch('tangram-data.json', { cache:'no-store' });
+        if (!res.ok) return;
+        const d = await res.json();
+        if (d && Array.isArray(d.shapes) && d.shapes.length) applyData(d);
+      } catch (e) {}
     }
 
     const page = ref('tangram');

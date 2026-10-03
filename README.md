@@ -1,6 +1,8 @@
 # Tangram Studio
 
-🇨🇿 [Česky](#česky) · 🇬🇧 [English](#english)
+🇨🇿 [Česky](#česky) · 🇬🇧 [English](#english) · ▶ [Live demo](https://infomtip.github.io/Tangram-editor-local-APP/)
+
+![Galerie / Gallery](screenshots/gallery.png)
 
 ---
 
@@ -14,8 +16,13 @@ Lokální webová aplikace pro skládání, generování a tisk tangramových ob
 - **Tisk** – karty 98 × 94,5 mm (6 na A4, ořezové značky, oboustranný tisk řešení) nebo volné stránky A4.
 - Čeština a angličtina, další jazyky lze přidat.
 
+### Ukázky
+| Editor | Generátor | Tisk karet |
+|---|---|---|
+| ![Editor](screenshots/editor.png) | ![Generátor](screenshots/generator.png) | ![Tisk](screenshots/print.png) |
+
 ### Spuštění
-- **Bez serveru:** otevři `index.html` v prohlížeči. Data se ukládají do prohlížeče; kontrolka vpravo nahoře upozorní, když je čas exportovat JSON.
+- **Bez serveru:** otevři `index.html` v prohlížeči. Data se ukládají do prohlížeče; kontrolka vpravo nahoře upozorní, když je čas exportovat JSON. Na webovém serveru bez PHP (např. GitHub Pages) se při prvním spuštění načte `tangram-data.json` jako výchozí databáze.
 - **S PHP serverem (např. WAMP):** zkopíruj složku do `www` a otevři přes `http://localhost/...`. Aplikace pak ukládá automaticky do `tangram-data.json` vedle sebe (záloha v `tangram-data.bak.json`).
 
 ### Struktura
@@ -44,8 +51,13 @@ A local web app for building, generating and printing tangram shapes. Runs in th
 - **Print** – 98 × 94.5 mm cards (6 per A4, crop marks, double-sided solutions) or free A4 pages.
 - Czech and English, more languages can be added.
 
+### Screenshots
+| Editor | Generator | Card printing |
+|---|---|---|
+| ![Editor](screenshots/editor.png) | ![Generator](screenshots/generator.png) | ![Print](screenshots/print.png) |
+
 ### Running
-- **Without a server:** open `index.html` in a browser. Data is stored in the browser; the indicator in the top right tells you when to export JSON.
+- **Without a server:** open `index.html` in a browser. Data is stored in the browser; the indicator in the top right tells you when to export JSON. On a web server without PHP (e.g. GitHub Pages) `tangram-data.json` is loaded as the default database on first run.
 - **With a PHP server (e.g. WAMP):** copy the folder into `www` and open it via `http://localhost/...`. The app then saves automatically to `tangram-data.json` next to itself (backup in `tangram-data.bak.json`).
 
 ### Adding a language
