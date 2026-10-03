@@ -6,7 +6,7 @@
 
 ## Česky
 
-Lokální webová aplikace pro skládání, hraní a tisk tangramových obrazců. Běží v prohlížeči, nepotřebuje internet ani instalaci.
+Lokální webová aplikace pro skládání, generování a tisk tangramových obrazců. Běží v prohlížeči, nepotřebuje internet ani instalaci.
 
 ### Funkce
 - **Galerie** – přehled obrazců, hledání, kategorie, import a export JSON.
@@ -36,7 +36,7 @@ Zkopíruj `lib/lang/en.js` třeba jako `de.js`, přepiš klíč `window.TANGRAM_
 
 ## English
 
-A local web app for building, playing and printing tangram shapes. Runs in the browser, no internet or installation required.
+A local web app for building, generating and printing tangram shapes. Runs in the browser, no internet or installation required.
 
 ### Features
 - **Gallery** – browse shapes, search, categories, JSON import and export.
