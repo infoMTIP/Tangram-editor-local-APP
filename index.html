@@ -1,0 +1,1461 @@
+<!doctype html>
+<!--
+  Tangram Studio
+  Copyright (c) 2026 vancode.io
+  Licensed under the MIT License, see LICENSE.
+-->
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tangram Studio</title>
+<!-- vše se načítá lokálně ze složky lib, bez internetu -->
+<link href="lib/sora.css" rel="stylesheet">
+<script src="lib/vue.global.prod.js"></script>
+<script src="lib/lang/cs.js"></script>
+<script src="lib/lang/en.js"></script>
+<style>
+:root{
+  --bg:#16191f; --panel:#1d2129; --raised:#262b35; --line:#303644; --line-2:#3d4455;
+  --text:#e9e5db; --muted:#8e95a3; --paper:#e9e5db;
+  --accent:#f0bf4c; --accent-ink:#221a05;
+  --mat:#182420; --danger:#e56b61;
+  color-scheme:dark; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:14px/1.45 'Sora',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;overflow:hidden;font-variant-numeric:tabular-nums}
+*,*::before,*::after{box-sizing:inherit}
+#app,.app{height:100%}
+.app{display:flex;flex-direction:column}
+
+/* horní lišta */
+.topbar{flex:none;display:flex;align-items:stretch;gap:28px;padding:0 16px;height:52px;background:var(--panel);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:-.01em;font-size:15px}
+.brand .logo{width:26px;height:26px}
+.tabs{display:flex;gap:2px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none;min-width:0}
+.tabs::-webkit-scrollbar{display:none}
+@media (max-width:1100px){.tabs button{padding:0 9px}.topbar{gap:14px}}
+@media (max-width:900px){.brand span{display:none}}
+/* tmavé, tenké posuvníky v panelech */
+*{scrollbar-width:thin;scrollbar-color:#3d4455 transparent}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#3d4455;border-radius:10px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:#4d5568;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-corner{background:transparent}
+.tabs button{position:relative;background:none;border:0;color:var(--muted);font:inherit;font-weight:500;padding:0 14px;cursor:pointer;display:flex;align-items:center;gap:7px}
+.tabs button:hover,.tabs button.active{color:var(--text)}
+.tabs button.active::after{content:'';position:absolute;left:10px;right:10px;bottom:-1px;height:2px;background:var(--accent);border-radius:2px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+.store-ind{margin-left:auto;align-self:center;display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.led{width:8px;height:8px;border-radius:50%;background:var(--muted);flex:none}
+.led.ok{background:#5ccb8a}
+.led.busy,.led.warn{background:var(--accent)}
+.led.bad{background:var(--danger)}
+.led.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(240,191,76,.6)}70%{box-shadow:0 0 0 7px rgba(240,191,76,0)}100%{box-shadow:0 0 0 0 rgba(240,191,76,0)}}
+.export-btn.alert{border-color:var(--accent);color:var(--accent)}
+.wide{width:100%;margin-bottom:8px}
+
+/* nástrojová lišta */
+.toolbar{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 16px;min-height:52px;border-bottom:1px solid var(--line);background:var(--bg)}
+.sep{width:1px;align-self:stretch;background:var(--line);margin:4px}
+.grow{flex:1}
+.main{flex:1;min-height:0;display:flex}
+.main>section{flex:1;min-width:0;min-height:0}
+
+/* ovládací prvky */
+.btn{display:inline-flex;align-items:center;gap:6px;background:var(--raised);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:6px 12px;font:inherit;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;line-height:1.3}
+.btn:hover:not(:disabled){border-color:var(--line-2);background:#2c323e}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.primary:hover:not(:disabled){background:#f5cb66;border-color:#f5cb66}
+.btn.sm{padding:4px 9px;font-size:12.5px}
+.btn.icon{padding:6px}
+.btn.sm.icon{padding:4px 6px}
+.btn.on{border-color:var(--accent);color:var(--accent)}
+.btn.danger:hover:not(:disabled){color:var(--danger);border-color:var(--danger)}
+.btn.danger-solid{background:var(--danger);border-color:var(--danger);color:#1d0d0b;font-weight:600}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ico{width:16px;height:16px;flex:none}
+.input{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:6px 9px;font:inherit;font-size:13px;min-width:0}
+.input:focus{border-color:var(--accent);outline:none}
+.w70{width:72px}
+.name-input{width:200px}
+.field{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.field-v{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);margin-bottom:8px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;margin:6px 0}
+.num{display:inline-flex;align-items:center;gap:5px;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--accent);margin:2px 0 8px}
+.seg{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:2px}
+.seg.full{display:flex;margin-bottom:10px}
+.seg.full button{flex:1}
+.seg button{background:none;border:0;color:var(--muted);font:inherit;font-size:12.5px;padding:4px 10px;border-radius:6px;cursor:pointer}
+.seg button.on{background:var(--raised);color:var(--text)}
+.switch{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;padding:6px 0;cursor:pointer}
+.switch input{appearance:none;-webkit-appearance:none;width:34px;height:20px;border-radius:20px;background:var(--line);position:relative;cursor:pointer;flex:none;order:2;margin:0;transition:background .15s}
+.switch input::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--text);transition:transform .15s}
+.switch input:checked{background:var(--accent)}
+.switch input:checked::after{transform:translateX(14px);background:var(--accent-ink)}
+.check{display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer}
+.check input{accent-color:var(--accent)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip-btn{background:var(--bg);border:1px solid var(--line);color:var(--muted);border-radius:20px;padding:3px 10px;font:inherit;font-size:12px;cursor:pointer}
+.chip-btn.on{border-color:var(--accent);color:var(--accent)}
+.disabled{opacity:.45}
+.hint{font-size:12px;color:var(--muted);margin:8px 0 0;line-height:1.5}
+.muted{color:var(--muted)}
+.warn{color:var(--accent)}
+kbd{font:inherit;font-size:11px;background:var(--raised);border:1px solid var(--line-2);border-bottom-width:2px;border-radius:4px;padding:0 5px}
+
+/* stránka Tangram */
+.cols{display:grid;grid-template-columns:260px minmax(0,1fr) 300px;height:100%}
+.panel{background:var(--panel);overflow-y:auto;padding:4px 16px 20px}
+.left{border-right:1px solid var(--line)}
+.right{border-left:1px solid var(--line)}
+.sec{padding:14px 0;border-bottom:1px solid var(--line)}
+.sec:last-child{border-bottom:0}
+.sec h3{margin:0 0 10px;font-size:12.5px;font-weight:600;color:var(--muted);letter-spacing:.01em}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0;font-size:12px}
+.keys dt{color:var(--text);white-space:nowrap}
+.keys dd{margin:0;color:var(--muted)}
+.editor{position:relative;background:var(--mat);overflow:hidden;min-height:300px}
+.stage{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+.stage.panning{cursor:grabbing}
+.piece{cursor:grab}
+.stage.dragging .piece{cursor:grabbing}
+.hud{position:absolute;display:flex;gap:4px;background:rgba(22,25,31,.88);border:1px solid var(--line)}
+.hud.tools{top:12px;right:12px;flex-direction:column;border-radius:10px;padding:4px}
+.hud.tools .btn{background:transparent;border-color:transparent}
+.hud.tools .btn:hover{background:var(--raised)}
+.hud.tools .btn.on{color:var(--accent)}
+.hud.tools hr{border:0;border-top:1px solid var(--line);margin:2px 4px;width:auto}
+.hud.status{left:12px;bottom:12px;font-size:12px;color:var(--muted);border-radius:8px;padding:4px 10px;gap:14px}
+.preview{aspect-ratio:4/3;background:var(--mat);border-radius:10px;border:1px solid var(--line);padding:12px;margin-bottom:10px}
+.info{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12.5px;margin:4px 0 10px}
+.info dt{color:var(--muted)}
+.info dd{margin:0;text-align:right}
+.status{font-size:12.5px;color:var(--muted)}
+.status.warn{color:var(--accent)}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.btn-row.end{justify-content:flex-end;margin-top:14px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.field-v .input{width:100%}
+.piece-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.piece-list button{width:100%;display:flex;align-items:center;gap:10px;background:none;border:1px solid transparent;border-radius:7px;color:var(--text);font:inherit;font-size:13px;padding:5px 8px;cursor:pointer;text-align:left}
+.piece-list button:hover{background:var(--raised)}
+.piece-list button.on{border-color:var(--accent);background:var(--raised)}
+.piece-list .muted{margin-left:auto;font-size:12px}
+.sw{width:12px;height:12px;border-radius:3px;flex:none}
+details summary{cursor:pointer;font-size:12.5px;color:var(--muted)}
+.json{font:12px/1.45 ui-monospace,Consolas,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;max-height:260px;overflow:auto;margin:8px 0 0;color:#c8ccd6}
+.thumb{width:100%;height:100%;display:block}
+
+/* galerie */
+.gallery{overflow-y:auto;padding:24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.thumb-btn{display:block;position:relative;width:100%;aspect-ratio:4/3;background:var(--mat);border:0;padding:0;cursor:pointer;overflow:hidden}
+.thumb-btn .thumb{position:absolute;left:18px;top:18px;width:calc(100% - 36px);height:calc(100% - 36px)}
+.thumb-btn:hover{background:#1c2b26}
+.card-body{padding:10px 12px 4px}
+.card-title{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-meta{display:flex;align-items:center;gap:8px;font-size:12px;margin-top:4px}
+.chip{background:var(--raised);border:1px solid var(--line);border-radius:20px;padding:1px 8px;font-size:11.5px}
+.card-actions{display:flex;gap:6px;padding:10px 12px 12px;margin-top:auto}
+.card-actions .btn:first-child{flex:1;justify-content:center}
+.new-card{display:flex;flex-direction:column;border:1.5px dashed var(--line-2);border-radius:12px;background:transparent;color:var(--muted);align-items:center;justify-content:center;gap:10px;min-height:250px;font:inherit;font-size:14px;cursor:pointer}
+.new-card:hover{color:var(--accent);border-color:var(--accent)}
+.new-card .ico{width:28px;height:28px}
+.empty{color:var(--muted);text-align:center;padding:40px 0}
+.search{position:relative;display:inline-flex;align-items:center}
+.search .ico{position:absolute;left:9px;color:var(--muted);pointer-events:none;width:14px;height:14px}
+.search .input{padding-left:30px;width:210px}
+
+/* tisk */
+.print{display:grid;grid-template-columns:280px minmax(0,1fr);height:100%}
+.print-side{border-right:1px solid var(--line)}
+.print-list{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:2px}
+.print-list label{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:13px}
+.print-list label:hover{background:var(--raised)}
+.print-list input{accent-color:var(--accent)}
+.print-list .mini{width:44px;height:34px;background:var(--mat);border-radius:6px;padding:3px;flex:none}
+.print-list small{display:block;font-size:11.5px}
+.pages{overflow-y:auto;padding:28px;display:flex;flex-direction:column;align-items:center;gap:28px;background:#121419}
+.sheet{width:min(100%,560px);aspect-ratio:210/297;background:#fff;box-shadow:0 10px 30px rgba(0,0,0,.5);flex:none}
+.sheet svg{display:block;width:100%;height:100%}
+
+/* modal a toast */
+.modal-back{position:fixed;inset:0;background:rgba(8,10,14,.6);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.modal{background:var(--panel);border:1px solid var(--line-2);border-radius:14px;padding:20px 22px;width:min(520px,100%);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal h2{margin:0 0 8px;font-size:17px;font-weight:600}
+.modal p{margin:0 0 10px;font-size:13.5px}
+.modal textarea{width:100%;height:220px;resize:vertical;margin-top:8px}
+.code{font:12px/1.45 ui-monospace,Consolas,monospace}
+.err{color:var(--danger)!important}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--raised);border:1px solid var(--line-2);padding:8px 16px;border-radius:10px;font-size:13px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+
+@media (max-width:1000px){
+  .cols{grid-template-columns:1fr;grid-template-rows:62vh auto auto;overflow-y:auto}
+  .editor{order:1}
+  .right{order:2;border-left:0;border-top:1px solid var(--line)}
+  .left{order:3;border-right:0;border-top:1px solid var(--line)}
+  .cols .panel{overflow:visible}
+}
+@media (max-width:800px){
+  .print{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .print-side{border-right:0;border-bottom:1px solid var(--line);max-height:38vh}
+}
+@media (max-width:600px){
+  .brand span{display:none}
+  .topbar{gap:12px}
+  .name-input,.search .input{width:150px}
+}
+@media (max-width:760px){.store-txt{display:none}}
+.lang-sw{display:flex;align-self:center;border:1px solid var(--line);border-radius:7px;overflow:hidden;flex:none}
+.lang-sw button{background:none;border:0;color:var(--muted);font:inherit;font-size:12px;font-weight:600;padding:4px 9px;cursor:pointer}
+.lang-sw button.on{background:var(--raised);color:var(--text)}
+.radio{display:flex;align-items:flex-start;gap:8px;font-size:13px;margin:6px 0;cursor:pointer}
+.radio input{accent-color:var(--accent);margin-top:3px}
+.radio small{display:block;color:var(--muted);font-size:12px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}.led.pulse{animation:none}}
+@page{size:A4;margin:0}
+@media print{
+  :root{padding:0}
+  html,body{height:auto;overflow:visible;background:#fff}
+  .topbar,.toolbar,.print-side,.toast,.modal-back{display:none!important}
+  .app,.main,.print,.pages{display:block;height:auto;overflow:visible;padding:0;background:#fff}
+  .sheet{width:210mm;height:297mm;box-shadow:none;margin:0;break-after:page;page-break-after:always}
+  .sheet:last-child{break-after:auto;page-break-after:auto}
+}
+
+
+.modal{max-height:calc(100vh - 40px);overflow-y:auto}
+.modal.wide{width:min(880px,100%)}
+.gen-tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:4px 0 14px}
+.gen-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.gen-grid .card-actions{padding:8px 10px 10px}
+@media (max-width:640px){.gen-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.wide-btn{width:100%;justify-content:center}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+  (function () {
+    var miss = [];
+    if (!window.Vue) miss.push('lib/vue.global.prod.js');
+    if (!window.TANGRAM_LANGS || !Object.keys(window.TANGRAM_LANGS).length) miss.push('lib/lang/cs.js, lib/lang/en.js');
+    if (miss.length) document.getElementById('app').innerHTML =
+      '<div style="padding:40px;font:15px/1.6 system-ui,sans-serif;color:#e9e5db">' +
+      '<h2 style="margin:0 0 8px">Chybí soubory / Missing files</h2>' + miss.join('<br>') +
+      '<p style="color:#8e95a3">Zkontroluj složku <b>lib</b> vedle <b>index.html</b> a přípony souborů. ' +
+      'Check the <b>lib</b> folder next to <b>index.html</b> and the file extensions.</p></div>';
+  })();
+</script>
+<script type="text/x-template" id="tpl">
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><shape-thumb :pieces="logoPieces" mode="color" :pad="4" class="logo"></shape-thumb><span>Tangram Studio</span></div>
+    <nav class="tabs" role="tablist">
+      <button v-for="tb in tabs" :key="tb" role="tab" :aria-selected="page===tb" :class="{active:page===tb}" @click="goPage(tb)">
+        {{t('tab.'+tb)}}<span v-if="tb==='tangram' && dirty" class="dot" :title="t('status.dirty')"></span>
+      </button>
+    </nav>
+    <div class="store-ind">
+      <template v-if="storage.mode==='server'">
+        <span class="led" :class="storage.error ? 'bad' : (storage.saving ? 'busy' : 'ok')"></span>
+        <span class="store-txt">{{ storage.error ? t('store.error',{msg:storage.error}) : (storage.saving ? t('store.saving') : t('store.server')) }}</span>
+      </template>
+      <button v-else-if="storage.mode==='local'" class="btn sm export-btn" :class="{alert:exportState==='dirty'}" @click="openExport"
+              :title="t(exportState==='dirty' ? 'export.tipDirty' : (exportState==='exported' ? 'export.tipDone' : 'export.tipNone'))">
+        <span class="led" :class="{ 'warn pulse':exportState==='dirty', ok:exportState==='exported' }"></span>
+        {{ exportState==='dirty' ? t('export.dirty') : (exportState==='exported' ? t('export.done',{time:fmtTime(storage.exportedAt)}) : t('export.none')) }}
+      </button>
+    </div>
+    <div class="lang-sw" :title="t('lang.switch')">
+      <button v-for="code in langCodes" :key="code" :class="{on:lang===code}" :title="langs[code]._name" @click="setLang(code)">{{code.toUpperCase()}}</button>
+    </div>
+  </header>
+
+  <!-- druhá lišta: nástroje podle stránky -->
+  <div class="toolbar">
+    <template v-if="page==='gallery'">
+      <button class="btn primary" @click="newShape()"><ico n="plus"></ico>{{t('gal.new')}}</button>
+      <span class="sep"></span>
+      <label class="search"><ico n="search"></ico><input class="input" v-model="gal.q" :placeholder="t('gal.search')"></label>
+      <select class="input" v-model="gal.cat" :aria-label="t('ed.category')">
+        <option value="">{{t('cat.all')}}</option>
+        <option value="__none">{{t('cat.none')}}</option>
+        <option v-for="c in store.categories" :key="c" :value="c">{{c}}</option>
+      </select>
+      <select class="input" v-model="gal.sort" :aria-label="t('gal.sort')">
+        <option value="updated">{{t('gal.sortUpdated')}}</option>
+        <option value="name">{{t('gal.sortName')}}</option>
+        <option value="created">{{t('gal.sortCreated')}}</option>
+      </select>
+      <div class="seg">
+        <button :class="{on:gal.thumb==='silhouette'}" @click="gal.thumb='silhouette'">{{t('view.silhouette')}}</button>
+        <button :class="{on:gal.thumb==='color'}" @click="gal.thumb='color'">{{t('view.color')}}</button>
+      </div>
+      <span class="grow"></span>
+      <button class="btn" @click="openImport"><ico n="upload"></ico>{{t('gal.import')}}</button>
+      <button class="btn" @click="openExport"><ico n="download"></ico>{{t('gal.export')}}</button>
+    </template>
+
+    <template v-else-if="page==='tangram'">
+      <button class="btn" @click="newShape()"><ico n="plus"></ico>{{t('ed.new')}}</button>
+      <button class="btn" @click="openGenerator"><ico n="dice"></ico>{{t('gen.button')}}</button>
+      <span class="sep"></span>
+      <label class="field"><span>{{t('ed.name')}}</span><input class="input name-input" v-model="doc.name" :placeholder="t('ed.namePh')"></label>
+      <label class="field"><span>{{t('ed.category')}}</span>
+        <select class="input" v-model="doc.category">
+          <option value="">{{t('cat.none')}}</option>
+          <option v-for="c in store.categories" :key="c" :value="c">{{c}}</option>
+        </select>
+      </label>
+      <template v-if="catAdd.open">
+        <input class="input" ref="catInput" v-model="catAdd.value" :placeholder="t('cat.newPh')" @keydown.enter="confirmCategory" @keydown.esc="catAdd.open=false">
+        <button class="btn sm" @click="confirmCategory">{{t('cat.add')}}</button>
+        <button class="btn sm icon" :title="t('common.cancel')" @click="catAdd.open=false"><ico n="x"></ico></button>
+      </template>
+      <button v-else class="btn" @click="openCatAdd"><ico n="plus"></ico>{{t('cat.addBtn')}}</button>
+      <span class="sep"></span>
+      <button class="btn icon" :title="t('common.undo')" :disabled="!history.undo.length" @click="undo"><ico n="undo"></ico></button>
+      <button class="btn icon" :title="t('common.redo')" :disabled="!history.redo.length" @click="redo"><ico n="redo"></ico></button>
+      <span class="grow"></span>
+      <span class="status" :class="{warn:dirty || !doc.id}">{{statusText}}</span>
+      <button class="btn primary" @click="saveDoc"><ico n="save"></ico>{{t('ed.save')}}</button>
+    </template>
+
+    <template v-else>
+      <div class="seg">
+        <button :class="{on:printOpts.layout==='cards'}" @click="printOpts.layout='cards'">{{t('pr.cards')}}</button>
+        <button :class="{on:printOpts.layout==='pages'}" @click="printOpts.layout='pages'">{{t('pr.pages')}}</button>
+      </div>
+      <span class="sep"></span>
+      <label class="field"><span>{{t('pr.content')}}</span>
+        <select class="input" v-model="printOpts.style">
+          <option value="task">{{t('pr.task')}}</option>
+          <option value="solution">{{t('pr.solution')}}</option>
+          <option value="both">{{t('pr.both')}}</option>
+        </select>
+      </label>
+      <template v-if="printOpts.layout==='cards'">
+        <label class="field"><span>{{t('pr.perCard')}}</span>
+          <select class="input" v-model.number="printOpts.perCard">
+            <option :value="1">{{t('pr.one')}}</option>
+            <option :value="4">{{t('pr.four')}}</option>
+          </select>
+        </label>
+      </template>
+      <template v-else>
+        <label class="field"><span>{{t('pr.perPage')}}</span>
+          <select class="input" v-model.number="printOpts.perPage">
+            <option v-for="v in [1,2,4,6,8,10,12]" :key="v" :value="v">{{v}}</option>
+          </select>
+        </label>
+        <label class="field"><span>{{t('pr.size')}}</span>
+          <select class="input" v-model="printOpts.sizeMode">
+            <option value="fit">{{t('pr.fit')}}</option>
+            <option value="real">{{t('pr.real')}}</option>
+          </select>
+        </label>
+        <label v-if="printOpts.sizeMode==='real'" class="field"><span>{{t('pr.side')}}</span><input class="input w70" type="number" min="40" max="250" v-model.number="printOpts.sideMm"><span>mm</span></label>
+      </template>
+      <span class="sep"></span>
+      <label class="check"><input type="checkbox" v-model="printOpts.showName">{{t('pr.name')}}</label>
+      <label class="check"><input type="checkbox" v-model="printOpts.showCategory">{{t('pr.category')}}</label>
+      <template v-if="printOpts.layout==='cards'">
+        <label class="check"><input type="checkbox" v-model="printOpts.cropMarks">{{t('pr.crop')}}</label>
+        <label class="check"><input type="checkbox" v-model="printOpts.cardOutline">{{t('pr.outline')}}</label>
+        <label class="check"><input type="checkbox" v-model="printOpts.cardNumber">{{t('pr.number')}}</label>
+        <label class="check" v-if="printOpts.style==='both'"><input type="checkbox" v-model="printOpts.duplex">{{t('pr.duplex')}}</label>
+      </template>
+      <label v-else class="check"><input type="checkbox" v-model="printOpts.frame">{{t('pr.frame')}}</label>
+      <label class="check" v-if="printOpts.style!=='task'"><input type="checkbox" v-model="printOpts.colorSolution">{{t('pr.colorSol')}}</label>
+      <span class="grow"></span>
+      <span class="status">{{tn('pages', pages.length)}}</span>
+      <button class="btn primary" :disabled="!pages.length" @click="doPrint"><ico n="print"></ico>{{t('pr.print')}}</button>
+    </template>
+  </div>
+
+  <main class="main">
+    <!-- GALERIE -->
+    <section v-if="page==='gallery'" class="gallery">
+      <div class="grid">
+        <button class="new-card" @click="newShape()"><ico n="plus"></ico><span>{{t('gal.new')}}</span></button>
+        <article v-for="s in galleryShapes" :key="s.id" class="card">
+          <button class="thumb-btn" :aria-label="t('gal.editAria',{name:s.name})" @click="openShape(s)"><shape-thumb :pieces="s.pieces" :mode="gal.thumb"></shape-thumb></button>
+          <div class="card-body">
+            <div class="card-title" :title="s.name">{{s.name}}</div>
+            <div class="card-meta"><span v-if="s.category" class="chip">{{s.category}}</span><span class="muted">{{fmtDate(s.updated)}}</span></div>
+          </div>
+          <div class="card-actions">
+            <button class="btn sm" @click="openShape(s)"><ico n="edit"></ico>{{t('gal.edit')}}</button>
+            <button class="btn sm icon" :title="t('gal.duplicate')" @click="duplicateShape(s)"><ico n="copy"></ico></button>
+            <button class="btn sm icon" :class="{on:printSel.includes(s.id)}" :title="t(printSel.includes(s.id) ? 'gal.printRemove' : 'gal.printAdd')" @click="togglePrint(s.id)"><ico n="print"></ico></button>
+            <button class="btn sm icon danger" :title="t('gal.delete')" @click="deleteShape(s)"><ico n="trash"></ico></button>
+          </div>
+        </article>
+      </div>
+      <p v-if="!galleryShapes.length && store.shapes.length" class="empty">{{t('gal.emptyFilter')}}</p>
+    </section>
+
+    <!-- TANGRAM -->
+    <section v-show="page==='tangram'" class="cols">
+      <aside class="panel left">
+        <div class="sec">
+          <h3>{{t('set.shape')}}</h3>
+          <button class="btn wide-btn" @click="centerShape"><ico n="center"></ico>{{t('set.center')}}</button>
+          <p class="hint">{{t('set.centerHint')}}</p>
+        </div>
+        <div class="sec">
+          <h3>{{t('set.rotation')}}</h3>
+          <label class="row"><span>{{t('set.rotStep')}}</span><span class="num"><input class="input w70" type="number" min="10" max="180" v-model.number="settings.rotStep" @change="clampStep">°</span></label>
+          <input type="range" min="10" max="180" step="5" v-model.number="settings.rotStep" :aria-label="t('set.rotStep')">
+          <div class="chips"><button v-for="v in [15,30,45,90]" :key="v" class="chip-btn" :class="{on:settings.rotStep===v}" @click="settings.rotStep=v">{{v}}°</button></div>
+        </div>
+        <div class="sec">
+          <h3>{{t('set.display')}}</h3>
+          <div class="seg full">
+            <button :class="{on:settings.colorMode==='color'}" @click="settings.colorMode='color'">{{t('view.color')}}</button>
+            <button :class="{on:settings.colorMode==='mono'}" @click="settings.colorMode='mono'">{{t('set.mono')}}</button>
+          </div>
+          <label class="switch"><input type="checkbox" v-model="settings.borders"><span>{{t('set.borders')}}</span></label>
+          <label class="switch"><input type="checkbox" v-model="settings.grid"><span>{{t('set.grid')}}</span></label>
+          <label class="switch"><input type="checkbox" v-model="settings.axes"><span>{{t('set.axes')}}</span></label>
+        </div>
+        <div class="sec">
+          <h3>{{t('set.snapping')}}</h3>
+          <label class="switch"><input type="checkbox" v-model="settings.snap"><span>{{t('set.snap')}}</span></label>
+          <div :class="{disabled:!settings.snap}">
+            <label class="row"><span>{{t('set.gap')}}</span><span class="num"><input class="input w70" type="number" min="0" max="20" step="0.5" v-model.number="settings.gap" :disabled="!settings.snap"></span></label>
+            <input type="range" min="0" max="20" step="0.5" v-model.number="settings.gap" :disabled="!settings.snap" :aria-label="t('set.gap')">
+            <label class="row"><span>{{t('set.snapRange')}}</span><span class="num"><input class="input w70" type="number" min="4" max="40" v-model.number="settings.snapRange" :disabled="!settings.snap">px</span></label>
+            <input type="range" min="4" max="40" v-model.number="settings.snapRange" :disabled="!settings.snap" :aria-label="t('set.snapRange')">
+          </div>
+          <p class="hint">{{t('set.gapHint')}}</p>
+        </div>
+        <div class="sec">
+          <h3>{{t('set.controls')}}</h3>
+          <dl class="keys">
+            <dt>{{t('k.drag')}}</dt><dd>{{t('k.dragD')}}</dd>
+            <dt>{{t('k.click')}}</dt><dd>{{t('k.clickD')}}</dd>
+            <dt><kbd>Ctrl</kbd> + {{t('k.clickLower')}}</dt><dd>{{t('k.leftD')}}</dd>
+            <dt>{{t('k.right')}}</dt><dd>{{t('k.leftD')}}</dd>
+            <dt><kbd>Q</kbd> / <kbd>E</kbd></dt><dd>{{t('k.qeD')}}</dd>
+            <dt><kbd>F</kbd></dt><dd>{{t('k.fD')}}</dd>
+            <dt><kbd>C</kbd></dt><dd>{{t('k.cD')}}</dd>
+            <dt>{{t('k.arrows')}}</dt><dd>{{t('k.arrowsD')}}</dd>
+            <dt>{{t('k.wheel')}}</dt><dd>{{t('k.wheelD')}}</dd>
+            <dt>{{t('k.pan')}}</dt><dd>{{t('k.panD')}}</dd>
+            <dt><kbd>0</kbd> / <kbd>Home</kbd></dt><dd>{{t('k.zoomKeysD')}}</dd>
+            <dt><kbd>Ctrl</kbd> + <kbd>S</kbd></dt><dd>{{t('k.saveD')}}</dd>
+          </dl>
+          <p class="hint">{{t('set.sessionHint')}}</p>
+        </div>
+      </aside>
+
+      <div class="editor" ref="editorEl">
+        <svg ref="svgEl" class="stage" :class="{dragging:dragState==='piece',panning:dragState==='pan'}" :viewBox="viewBox"
+             @pointerdown="onBgPointerDown" @pointermove="onPointerMove" @pointerup="onPointerUp" @pointercancel="onPointerUp"
+             @pointerleave="cursor=null" @contextmenu.prevent>
+          <g v-if="settings.grid" pointer-events="none">
+            <path :d="gridD.fine" fill="none" stroke="#1c2a25" stroke-width="1" vector-effect="non-scaling-stroke"></path>
+            <path :d="gridD.minor" fill="none" stroke="#1f302a" stroke-width="1" vector-effect="non-scaling-stroke"></path>
+            <path :d="gridD.major" fill="none" stroke="#2b4239" stroke-width="1" vector-effect="non-scaling-stroke"></path>
+          </g>
+          <g v-if="settings.axes" pointer-events="none">
+            <line :x1="vb.x" :x2="vb.x+vb.w" y1="0" y2="0" stroke="#e56b61" stroke-width="1.25" vector-effect="non-scaling-stroke" opacity=".8"></line>
+            <line x1="0" x2="0" :y1="vb.y" :y2="vb.y+vb.h" stroke="#5ccb8a" stroke-width="1.25" vector-effect="non-scaling-stroke" opacity=".8"></line>
+            <circle cx="0" cy="0" :r="4.5/view.scale" fill="#182420" stroke="#e9e5db" stroke-width="1.5" vector-effect="non-scaling-stroke"></circle>
+          </g>
+          <polygon v-for="p in doc.pieces" :key="p.type" class="piece" :points="pts(p)"
+                   :fill="fillFor(p)" :stroke="strokeFor(p)" :stroke-width="settings.borders?1.6:1"
+                   vector-effect="non-scaling-stroke" stroke-linejoin="round"
+                   @pointerdown="onPiecePointerDown($event,p)" @contextmenu.prevent="onPieceContext($event,p)"></polygon>
+          <polygon v-if="sel" :points="pts(sel)" fill="none" stroke="#f0bf4c" stroke-width="2.5" vector-effect="non-scaling-stroke" stroke-linejoin="round" pointer-events="none"></polygon>
+          <circle v-if="snapPoint" :cx="snapPoint.x" :cy="snapPoint.y" :r="5/view.scale" fill="#f0bf4c" pointer-events="none"></circle>
+        </svg>
+        <div class="hud tools">
+          <button class="btn icon" :title="t('hud.zoomIn')" @click="zoomBy(1.25)"><ico n="plus"></ico></button>
+          <button class="btn icon" :title="t('hud.zoomOut')" @click="zoomBy(0.8)"><ico n="minus"></ico></button>
+          <button class="btn icon" :title="t('hud.reset')" @click="resetView"><ico n="target"></ico></button>
+          <button class="btn icon" :title="t('hud.fit')" @click="fitView"><ico n="fit"></ico></button>
+          <hr>
+          <button class="btn icon" :class="{on:settings.axes}" :title="t('set.axes')" @click="settings.axes=!settings.axes"><ico n="axes"></ico></button>
+          <button class="btn icon" :class="{on:settings.grid}" :title="t('set.grid')" @click="settings.grid=!settings.grid"><ico n="grid"></ico></button>
+        </div>
+        <div class="hud status">
+          <span>{{zoomPct}} %</span>
+          <span v-if="cursor">X {{Math.round(cursor.x)}}</span>
+          <span v-if="cursor">Y {{Math.round(-cursor.y)}}</span>
+        </div>
+      </div>
+
+      <!-- pravý sloupec: editor -->
+      <aside class="panel right">
+        <div class="sec">
+          <h3>{{t('rp.preview')}}</h3>
+          <div class="preview"><shape-thumb :pieces="doc.pieces" :mode="previewMode"></shape-thumb></div>
+          <div class="seg full">
+            <button :class="{on:previewMode==='silhouette'}" @click="previewMode='silhouette'">{{t('rp.task')}}</button>
+            <button :class="{on:previewMode==='solution'}" @click="previewMode='solution'">{{t('rp.solution')}}</button>
+          </div>
+          <dl class="info">
+            <dt>{{t('rp.size')}}</dt><dd>{{docSize.w}} × {{docSize.h}}</dd>
+            <dt>{{t('rp.state')}}</dt><dd :class="{warn:dirty || !doc.id}">{{statusText}}</dd>
+          </dl>
+          <div class="btn-row">
+            <button class="btn sm" @click="scatterPieces">{{t('rp.scatter')}}</button>
+            <button class="btn sm" @click="squarePieces">{{t('rp.square')}}</button>
+          </div>
+        </div>
+        <div class="sec">
+          <h3>{{t('rp.pieces')}}</h3>
+          <ul class="piece-list">
+            <li v-for="d in pieceDefs" :key="d.type">
+              <button :class="{on:selectedId===d.type}" @click="selectedId = selectedId===d.type ? null : d.type">
+                <span class="sw" :style="{background: settings.colorMode==='color' ? d.color : '#e9e5db'}"></span>{{t('piece.'+d.type)}}
+                <span class="muted">{{fmtDeg(pieceBy(d.type).rot)}}</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+        <div class="sec" v-if="sel">
+          <h3>{{t('piece.'+sel.type)}}</h3>
+          <div class="grid2">
+            <label class="field-v"><span>X</span><input class="input" type="number" step="1" :value="fmtN(sel.x)" @change="setField('x',$event.target.value)"></label>
+            <label class="field-v"><span>Y</span><input class="input" type="number" step="1" :value="fmtN(-sel.y)" @change="setField('y',$event.target.value)"></label>
+          </div>
+          <label class="field-v"><span>{{t('rp.rotation')}}</span><input class="input" type="number" step="0.5" :value="fmtN(sel.rot)" @change="setField('rot',$event.target.value)"></label>
+          <input type="range" min="0" max="360" step="0.5" :value="sel.rot" :aria-label="t('rp.rotation')" @pointerdown="pushHistory" @input="sel.rot=+$event.target.value" @change="sel.rot=normDeg(sel.rot)">
+          <div class="btn-row">
+            <button class="btn sm" @click="rotSel(-stepVal)"><ico n="rotL"></ico>{{stepVal}}°</button>
+            <button class="btn sm" @click="rotSel(-fine)">−{{fmtDec(fine)}}°</button>
+            <button class="btn sm" @click="rotSel(fine)">+{{fmtDec(fine)}}°</button>
+            <button class="btn sm" @click="rotSel(stepVal)"><ico n="rotR"></ico>{{stepVal}}°</button>
+          </div>
+          <label class="row"><span>{{t('rp.fine')}}</span>
+            <select class="input" v-model.number="fine"><option :value="0.5">{{fmtDec(0.5)}}°</option><option :value="1">1°</option><option :value="5">5°</option></select>
+          </label>
+          <button v-if="selDef.flippable" class="btn sm" :class="{on:sel.flip}" @click="flipSel"><ico n="flip"></ico>{{t('rp.flip')}}</button>
+        </div>
+        <p v-else class="hint">{{t('rp.hint')}}</p>
+        <div class="sec">
+          <details><summary>{{t('rp.json')}}</summary><pre class="json">{{docJson}}</pre></details>
+        </div>
+      </aside>
+
+    </section>
+
+    <!-- TISK -->
+    <section v-if="page==='print'" class="print">
+      <aside class="panel print-side">
+        <div class="sec">
+          <h3>{{t('pr.shapes')}}</h3>
+          <select class="input wide" v-model="printOpts.catFilter" :aria-label="t('ed.category')">
+            <option value="">{{t('cat.all')}}</option>
+            <option value="__none">{{t('cat.none')}}</option>
+            <option v-for="c in store.categories" :key="c" :value="c">{{c}}</option>
+          </select>
+          <div class="btn-row">
+            <button class="btn sm" @click="selectPrintList">{{t('pr.selectShown')}}</button>
+            <button class="btn sm" @click="printSel=[]">{{t('pr.clear')}}</button>
+          </div>
+          <p class="hint" style="margin:0 0 4px">{{t('pr.selected',{n:printSel.length})}}</p>
+          <ul class="print-list">
+            <li v-for="s in printList" :key="s.id">
+              <label><input type="checkbox" :value="s.id" v-model="printSel"><shape-thumb :pieces="s.pieces" mode="silhouette" :pad="12" class="mini"></shape-thumb>
+                <span>{{s.name}}<small v-if="s.category" class="muted">{{s.category}}</small></span></label>
+            </li>
+          </ul>
+          <p v-if="!printList.length" class="hint">{{t('pr.emptyCat')}}</p>
+        </div>
+        <div class="sec">
+          <p v-if="printOpts.layout==='cards'" class="hint">{{t('pr.cardHint',{w:fmtDec(CARD_W),h:fmtDec(CARD_H)})}}
+            <template v-if="printOpts.style==='both' && printOpts.duplex"> {{t('pr.duplexHint')}}</template></p>
+          <p v-else-if="printOpts.sizeMode==='real'" class="hint">{{t('pr.realHint')}}</p>
+        </div>
+      </aside>
+      <div class="pages">
+        <p v-if="!pages.length" class="empty">{{t('pr.empty')}}</p>
+        <div v-for="(pg,pi) in pages" :key="pi" class="sheet">
+          <svg viewBox="0 0 210 297">
+            <rect width="210" height="297" fill="#fff"></rect>
+            <g v-if="pg.marks" stroke="#555" stroke-width="0.2">
+              <line v-for="(m,mi) in pg.marks" :key="mi" :x1="m[0]" :y1="m[1]" :x2="m[2]" :y2="m[3]"></line>
+            </g>
+            <g v-for="f in pg.frames" :key="f.key">
+              <rect v-if="printOpts.cardOutline" :x="f.x" :y="f.y" :width="f.w" :height="f.h" fill="none" stroke="#bdbdbd" stroke-width="0.2"></rect>
+              <text v-if="printOpts.cardNumber" :x="f.x+f.w-2" :y="f.y+f.h-1.6" text-anchor="end" font-size="2.3" font-family="Sora, sans-serif" fill="#9a9a9a">{{f.num}}</text>
+            </g>
+            <g v-for="c in pg.cells" :key="c.key">
+              <rect v-if="c.frame" :x="c.x" :y="c.y" :width="c.w" :height="c.h" rx="3" fill="none" stroke="#cfcfcf" stroke-width="0.3"></rect>
+              <text v-if="c.title" :x="c.cx" :y="c.t1y" text-anchor="middle" :font-size="c.fs" :textLength="c.tl" :lengthAdjust="c.tl ? 'spacingAndGlyphs' : null" font-weight="600" font-family="Sora, sans-serif" fill="#222">{{c.title}}</text>
+              <text v-if="c.sub" :x="c.cx" :y="c.t2y" text-anchor="middle" :font-size="c.sfs" :textLength="c.stl" :lengthAdjust="c.stl ? 'spacingAndGlyphs' : null" font-family="Sora, sans-serif" fill="#777">{{c.sub}}</text>
+              <g :transform="'translate('+c.tx+' '+c.ty+') scale('+c.sc+')'">
+                <polygon v-for="p in c.pieces" :key="p.type" :points="pts(p)" :fill="printFill(c,p)" stroke="#1f1f1f"
+                         :stroke-width="(c.kind==='task'?0.25:0.4)/c.sc" stroke-linejoin="round"></polygon>
+              </g>
+              <text v-if="c.shrunk" :x="c.cx" :y="c.y+c.h-2" text-anchor="middle" font-size="2.8" font-family="Sora, sans-serif" fill="#b5503f">{{t('pr.shrunk')}}</text>
+            </g>
+            <text v-if="pg.footer" x="196" y="289" text-anchor="end" font-size="3" font-family="Sora, sans-serif" fill="#999">{{t('pr.pageOf',{i:pi+1,n:pages.length})}}</text>
+          </svg>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div v-if="modal.open" class="modal-back" @click.self="closeModal(false)">
+    <div class="modal" :class="{wide:modal.kind==='generator'}" role="dialog" aria-modal="true">
+      <h2>{{modal.title}}</h2>
+      <template v-if="modal.kind==='confirm'">
+        <p>{{modal.text}}</p>
+        <div class="btn-row end">
+          <button class="btn" @click="closeModal(false)">{{t('common.cancel')}}</button>
+          <button class="btn" :class="modal.danger?'danger-solid':'primary'" @click="closeModal(true)">{{modal.okLabel}}</button>
+        </div>
+      </template>
+      <template v-else-if="modal.kind==='export'">
+        <p class="muted">{{modal.text}}</p>
+        <textarea class="input code" readonly :value="modal.textarea" @focus="$event.target.select()"></textarea>
+        <div class="btn-row end">
+          <button class="btn" @click="copyExport">{{t('exp.copy')}}</button>
+          <button class="btn primary" @click="download('tangram-data.json', modal.textarea)"><ico n="download"></ico>{{t('exp.download')}}</button>
+          <button class="btn" @click="closeModal(false)">{{t('common.close')}}</button>
+        </div>
+      </template>
+      <template v-else-if="modal.kind==='generator'">
+        <p class="muted">{{t('gen.hint')}}</p>
+        <div class="gen-tools">
+          <label class="field"><span>{{t('gen.style')}}</span>
+            <select class="input" v-model="gen.style" @change="generateAll">
+              <option value="compact">{{t('gen.compact')}}</option>
+              <option value="mixed">{{t('gen.mixed')}}</option>
+              <option value="sprawl">{{t('gen.sprawl')}}</option>
+            </select>
+          </label>
+          <div class="seg">
+            <button :class="{on:gen.thumb==='silhouette'}" @click="gen.thumb='silhouette'">{{t('view.silhouette')}}</button>
+            <button :class="{on:gen.thumb==='solution'}" @click="gen.thumb='solution'">{{t('rp.solution')}}</button>
+            <button :class="{on:gen.thumb==='color'}" @click="gen.thumb='color'">{{t('view.color')}}</button>
+          </div>
+          <span class="grow"></span>
+          <button class="btn" @click="generateAll"><ico n="dice"></ico>{{t('gen.regenerate')}}</button>
+        </div>
+        <div class="gen-grid">
+          <div v-for="it in gen.items" :key="it.key" class="card">
+            <button class="thumb-btn" :title="t('gen.use')" @click="useGenerated(it)"><shape-thumb :pieces="it.pieces" :mode="gen.thumb"></shape-thumb></button>
+            <div class="card-actions">
+              <button class="btn sm primary" @click="useGenerated(it)"><ico n="edit"></ico>{{t('gen.use')}}</button>
+              <button class="btn sm icon" :title="t('gen.reroll')" @click="rerollGenerated(it)"><ico n="dice"></ico></button>
+            </div>
+          </div>
+        </div>
+        <div class="btn-row end"><button class="btn" @click="closeModal(false)">{{t('common.close')}}</button></div>
+      </template>
+      <template v-else-if="modal.kind==='import'">
+        <p class="muted">{{t('imp.text')}}</p>
+        <input type="file" accept=".json,.txt,application/json,text/plain" @change="onImportFile">
+        <textarea class="input code" v-model="modal.textarea" placeholder='{"shapes": [ ... ]}'></textarea>
+        <label class="radio"><input type="radio" value="replace" v-model="modal.importMode">
+          <span>{{t('imp.replace')}}<small>{{t('imp.replaceNote',{count:tn('shapes',store.shapes.length)})}}</small></span></label>
+        <label class="radio"><input type="radio" value="append" v-model="modal.importMode"><span>{{t('imp.append')}}</span></label>
+        <p v-if="modal.error" class="err">{{modal.error}}</p>
+        <div class="btn-row end">
+          <button class="btn" @click="closeModal(false)">{{t('common.cancel')}}</button>
+          <button class="btn" :class="modal.importMode==='replace' ? 'danger-solid' : 'primary'" @click="doImport">{{t(modal.importMode==='replace' ? 'imp.doReplace' : 'imp.do')}}</button>
+        </div>
+      </template>
+    </div>
+  </div>
+  <div v-if="toastMsg" class="toast" role="status">{{toastMsg}}</div>
+</div>
+</script>
+<script>
+const { createApp, reactive, ref, computed, onMounted, onBeforeUnmount, nextTick } = window.Vue || {};
+const LANGS = window.TANGRAM_LANGS || {};
+
+/* ---------- pomocné funkce ---------- */
+const r2 = v => Math.round(v * 100) / 100;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const normDeg = d => { d = ((+d || 0) % 360 + 360) % 360; d = r2(d); return d === 360 ? 0 : d; };
+const uid = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const PAPER = '#e9e5db', MAT = '#182420';
+const BASE_SCALE = 1.5;             // měřítko, které se ukazuje jako 100 %
+const ZOOM_MIN = 0.15, ZOOM_MAX = 50;
+const CARD_W = 98, CARD_H = 94.5;   // rozměr karty do krabičky v mm
+const STORE_KEY = 'tangram-studio-v1';
+const LANG_KEY = 'tangram-studio-lang';
+
+/* ---------- definice dílů (celý čtverec má stranu 200) ---------- */
+const PIECE_DEFS = [
+  { type:'bigA',   color:'#e0625a', pts:[[0,0],[200,0],[100,100]] },
+  { type:'bigB',   color:'#4d8fdb', pts:[[0,0],[100,100],[0,200]] },
+  { type:'mid',    color:'#e3a33b', pts:[[200,100],[200,200],[100,200]] },
+  { type:'smallA', color:'#3fb99a', pts:[[200,0],[200,100],[150,50]] },
+  { type:'smallB', color:'#9d6fe0', pts:[[100,100],[150,150],[50,150]] },
+  { type:'square', color:'#e0cf55', pts:[[100,100],[150,50],[200,100],[150,150]] },
+  { type:'para',   color:'#df78bd', pts:[[0,200],[50,150],[150,150],[100,200]], flippable:true },
+];
+PIECE_DEFS.forEach(d => {
+  const cx = d.pts.reduce((s, p) => s + p[0], 0) / d.pts.length;
+  const cy = d.pts.reduce((s, p) => s + p[1], 0) / d.pts.length;
+  d.local = d.pts.map(p => ({ x: p[0] - cx, y: p[1] - cy }));
+  d.home = { x: cx - 100, y: cy - 100 };
+});
+const DEF = Object.fromEntries(PIECE_DEFS.map(d => [d.type, d]));
+
+function makePieces(explode) {
+  return PIECE_DEFS.map(d => ({ type:d.type, x:r2(d.home.x * explode), y:r2(d.home.y * explode), rot:0, flip:false }));
+}
+function normalizePieces(arr) {
+  const out = [], seen = new Set();
+  if (Array.isArray(arr)) for (const f of arr) {
+    if (f && DEF[f.type] && !seen.has(f.type)) {
+      seen.add(f.type);
+      out.push({ type:f.type, x:+f.x || 0, y:+f.y || 0, rot:normDeg(f.rot), flip:!!f.flip });
+    }
+  }
+  for (const b of makePieces(1.6)) if (!seen.has(b.type)) out.push(b);
+  return out;
+}
+
+/* ---------- geometrie ---------- */
+function worldVerts(p) {
+  const a = p.rot * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+  return DEF[p.type].local.map(v => {
+    const lx = p.flip ? -v.x : v.x, ly = v.y;
+    return { x: p.x + lx * c - ly * s, y: p.y + lx * s + ly * c };
+  });
+}
+const pointsStr = p => worldVerts(p).map(v => v.x.toFixed(2) + ',' + v.y.toFixed(2)).join(' ');
+function bboxOf(pieces) {
+  let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+  for (const p of pieces) for (const v of worldVerts(p)) {
+    if (v.x < x1) x1 = v.x; if (v.y < y1) y1 = v.y; if (v.x > x2) x2 = v.x; if (v.y > y2) y2 = v.y;
+  }
+  if (!isFinite(x1)) return { x:-100, y:-100, w:200, h:200 };
+  return { x:x1, y:y1, w:Math.max(x2 - x1, 1), h:Math.max(y2 - y1, 1) };
+}
+function closestOnSeg(p, a, b) {
+  const abx = b.x - a.x, aby = b.y - a.y;
+  const t = clamp(((p.x - a.x) * abx + (p.y - a.y) * aby) / (abx * abx + aby * aby), 0, 1);
+  return { x: a.x + abx * t, y: a.y + aby * t };
+}
+function outwardNormal(a, b, center) {
+  let nx = b.y - a.y, ny = -(b.x - a.x);
+  const L = Math.hypot(nx, ny) || 1; nx /= L; ny /= L;
+  if (nx * ((a.x + b.x) / 2 - center.x) + ny * ((a.y + b.y) / 2 - center.y) < 0) { nx = -nx; ny = -ny; }
+  return { x: nx, y: ny };
+}
+// Nejbližší přichycení: vrchol k vrcholu (jen bez mezery) a vrchol k hraně (s mezerou)
+function computeSnap(piece, others, gap, range) {
+  const mv = worldVerts(piece), mc = { x: piece.x, y: piece.y };
+  let best = null, bestScore = Infinity;
+  const consider = (dx, dy, point, bias) => {
+    const d = Math.hypot(dx, dy);
+    if (d > range) return;
+    if (d * bias < bestScore) { bestScore = d * bias; best = { dx, dy, point }; }
+  };
+  for (const o of others) {
+    const ov = worldVerts(o), oc = { x: o.x, y: o.y };
+    if (gap < 0.01) for (const v of mv) for (const w of ov) consider(w.x - v.x, w.y - v.y, w, 0.5);
+    for (let i = 0; i < ov.length; i++) {
+      const a = ov[i], b = ov[(i + 1) % ov.length], n = outwardNormal(a, b, oc);
+      for (const v of mv) { const p = closestOnSeg(v, a, b); consider(p.x + n.x * gap - v.x, p.y + n.y * gap - v.y, p, 1); }
+    }
+    for (let i = 0; i < mv.length; i++) {
+      const a = mv[i], b = mv[(i + 1) % mv.length], n = outwardNormal(a, b, mc);
+      for (const w of ov) { const p = closestOnSeg(w, a, b); consider(w.x - p.x - n.x * gap, w.y - p.y - n.y * gap, w, 1); }
+    }
+  }
+  return best;
+}
+/* ---------- generátor náhodných obrazců ---------- */
+// Překrývají se dva konvexní mnohoúhelníky? (SAT, dotyk hranou se nepočítá)
+function convexOverlap(A, B, eps) {
+  for (const P of [A, B]) for (let i = 0; i < P.length; i++) {
+    const a = P[i], b = P[(i + 1) % P.length];
+    let nx = b.y - a.y, ny = a.x - b.x; const L = Math.hypot(nx, ny) || 1; nx /= L; ny /= L;
+    let a1 = Infinity, a2 = -Infinity, b1 = Infinity, b2 = -Infinity;
+    for (const v of A) { const d = v.x * nx + v.y * ny; if (d < a1) a1 = d; if (d > a2) a2 = d; }
+    for (const v of B) { const d = v.x * nx + v.y * ny; if (d < b1) b1 = d; if (d > b2) b2 = d; }
+    if (Math.min(a2, b2) - Math.max(a1, b1) <= eps) return false;   // našla se oddělující osa
+  }
+  return true;
+}
+// Dílky se přikládají hranou k hraně, bez překryvu. Styl ovlivní, kterou z platných poloh vybere.
+function generateShape(style) {
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const order = shuffle(PIECE_DEFS.map(d => d.type));
+    const f = order[0];
+    const placed = [{ type:f, x:0, y:0, rot:45 * Math.floor(Math.random() * 8), flip:!!DEF[f].flippable && Math.random() < 0.5 }];
+    let ok = true;
+    for (let i = 1; i < order.length && ok; i++) {
+      const type = order[i], cands = [];
+      for (let tries = 0; tries < 400 && cands.length < 14; tries++) {
+        const host = placed[Math.floor(Math.random() * placed.length)];
+        const hv = worldVerts(host), hi = Math.floor(Math.random() * hv.length);
+        const a = hv[hi], b = hv[(hi + 1) % hv.length];
+        const flip = !!DEF[type].flippable && Math.random() < 0.5;
+        const lv = worldVerts({ type, x:0, y:0, rot:0, flip }), ni = Math.floor(Math.random() * lv.length);
+        const c = lv[ni], d = lv[(ni + 1) % lv.length];
+        // natočit tak, aby nová hrana ležela proti hraně hostitele
+        const rot = normDeg((Math.atan2(a.y - b.y, a.x - b.x) - Math.atan2(d.y - c.y, d.x - c.x)) * 180 / Math.PI);
+        const rv = worldVerts({ type, x:0, y:0, rot, flip }), c2 = rv[ni], d2 = rv[(ni + 1) % rv.length];
+        const mode = Math.floor(Math.random() * 3);   // zarovnat k jednomu konci, druhému konci, nebo na střed
+        const sx = mode === 0 ? b.x - c2.x : mode === 1 ? a.x - d2.x : (a.x + b.x - c2.x - d2.x) / 2;
+        const sy = mode === 0 ? b.y - c2.y : mode === 1 ? a.y - d2.y : (a.y + b.y - c2.y - d2.y) / 2;
+        const cand = { type, x:r2(sx), y:r2(sy), rot, flip };
+        const cv = worldVerts(cand);
+        if (placed.some(p => convexOverlap(cv, worldVerts(p), 0.5))) continue;
+        cands.push(cand);
+      }
+      if (!cands.length) { ok = false; break; }
+      const score = cand => {
+        const bb = bboxOf(placed.concat([cand])), area = bb.w * bb.h, aspect = Math.max(bb.w, bb.h) / Math.min(bb.w, bb.h);
+        if (style === 'compact') return area * (1 + 0.3 * (aspect - 1)) * (0.9 + 0.2 * Math.random());
+        if (style === 'sprawl') return -area * (0.7 + 0.6 * Math.random());
+        return area * (0.4 + 1.2 * Math.random());
+      };
+      placed.push(cands.map(c => [score(c), c]).sort((p, q) => p[0] - q[0])[0][1]);
+    }
+    if (!ok) continue;
+    const bb = bboxOf(placed), cx = bb.x + bb.w / 2, cy = bb.y + bb.h / 2;
+    return placed.map(p => ({ ...p, x:r2(p.x - cx), y:r2(p.y - cy) }));
+  }
+  return makePieces(1);
+}
+
+/* ---------- ikony ---------- */
+const ICONS = {
+  plus:'M12 5v14M5 12h14', minus:'M5 12h14', x:'M6 6l12 12M18 6 6 18',
+  undo:'M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11', redo:'m15 14 5-5-5-5M20 9H9.5a5.5 5.5 0 0 0 0 11H13',
+  fit:'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5', target:'M12 2v4M12 18v4M2 12h4M18 12h4M12 8a4 4 0 1 1 0 8a4 4 0 1 1 0-8',
+  axes:'M5 19V4M5 19h15M5 4 3 6M5 4l2 2M20 19l-2-2M20 19l-2 2', grid:'M3 3h18v18H3zM9 3v18M15 3v18M3 9h18M3 15h18',
+  save:'M5 3h11l3 3v15H5zM8 3v5h7V3M8 21v-7h8v7', print:'M6 9V3h12v6M6 18H4v-7h16v7h-2M6 14h12v7H6z',
+  edit:'M4 20h4L19 9l-4-4L4 16zM13 7l4 4', copy:'M9 9h11v11H9zM5 15H4V4h11v1',
+  trash:'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3', upload:'M12 15V3M7 8l5-5 5 5M4 17v4h16v-4',
+  download:'M12 3v12M7 10l5 5 5-5M4 17v4h16v-4', search:'M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14M20 20l-4-4',
+  rotL:'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5', rotR:'M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5',
+  flip:'M12 3v18M9 7 3 12l6 5zM15 7l6 5-6 5z', check:'M5 12l5 5L20 7',
+  center:'M12 2v5M12 17v5M2 12h5M17 12h5M8 8h8v8H8z',
+  dice:'M4 4h16v16H4zM8.5 8.5h.01M15.5 15.5h.01M15.5 8.5h.01M8.5 15.5h.01M12 12h.01',
+};
+const Ico = {
+  props:['n'],
+  template:`<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="d"/></svg>`,
+  computed:{ d(){ return ICONS[this.n] || ''; } },
+};
+
+/* ---------- náhled obrazce ---------- */
+const ShapeThumb = {
+  props:{ pieces:Array, mode:{ type:String, default:'silhouette' }, pad:{ type:Number, default:16 } },
+  computed:{
+    vb(){ const b = bboxOf(this.pieces); return (b.x - this.pad) + ' ' + (b.y - this.pad) + ' ' + (b.w + 2 * this.pad) + ' ' + (b.h + 2 * this.pad); },
+  },
+  methods:{
+    pts:pointsStr,
+    fill(p){ return this.mode === 'color' ? DEF[p.type].color : PAPER; },
+    stroke(){ return this.mode === 'silhouette' ? PAPER : MAT; },
+  },
+  template:`<svg class="thumb" :viewBox="vb" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <polygon v-for="p in pieces" :key="p.type" :points="pts(p)" :fill="fill(p)" :stroke="stroke(p)"
+      :stroke-width="mode==='silhouette'?1:1.4" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`,
+};
+
+/* ---------- aplikace ---------- */
+if (window.Vue && Object.keys(LANGS).length) createApp({
+  template:'#tpl',
+  components:{ ShapeThumb, Ico },
+  setup() {
+    /* ----- jazyky ----- */
+    const detectLang = () => {
+      try { const s = localStorage.getItem(LANG_KEY); if (s && LANGS[s]) return s; } catch (e) {}
+      const n = (navigator.language || '').toLowerCase();
+      if ((n.startsWith('cs') || n.startsWith('sk')) && LANGS.cs) return 'cs';
+      return LANGS.en ? 'en' : Object.keys(LANGS)[0];
+    };
+    const lang = ref(detectLang());
+    const langCodes = Object.keys(LANGS);
+    const FB = LANGS.cs || LANGS[langCodes[0]];
+    const dict = computed(() => LANGS[lang.value] || FB);
+    const rawT = k => dict.value[k] !== undefined ? dict.value[k] : FB[k];
+    const fill = (s, p) => p ? String(s).replace(/\{(\w+)\}/g, (m, k) => p[k] !== undefined ? p[k] : m) : String(s);
+    const t = (k, p) => { let s = rawT(k); if (s === undefined) return k; if (Array.isArray(s)) s = s[0]; return fill(s, p); };
+    const tn = (k, n, p) => {
+      const d = dict.value[k] !== undefined ? dict.value : FB, forms = d[k];
+      if (forms === undefined) return k;
+      const pf = typeof d._plural === 'function' ? d._plural : (x => x === 1 ? 0 : 1);
+      const arr = Array.isArray(forms) ? forms : [forms];
+      return fill(arr[Math.min(pf(n), arr.length - 1)], Object.assign({ n }, p || {}));
+    };
+    const locale = () => rawT('_locale') || 'cs-CZ';
+    const setLang = c => { lang.value = c; try { localStorage.setItem(LANG_KEY, c); } catch (e) {} document.documentElement.lang = c; };
+    document.documentElement.lang = lang.value;
+
+    /* ----- data ----- */
+    const seedStore = () => {
+      const now = Date.now(), cats = (rawT('seed.categories') || []).slice();
+      return { categories:cats, shapes:[{ id:uid(), name:t('seed.square'), category:cats[3] || '', pieces:makePieces(1), created:now, updated:now }] };
+    };
+    const loadStore = () => {
+      try {
+        const raw = localStorage.getItem(STORE_KEY);
+        if (raw) {
+          const d = JSON.parse(raw);
+          if (d && Array.isArray(d.shapes)) return { shapes:d.shapes.map(s => ({ ...s, pieces:normalizePieces(s.pieces) })), categories:Array.isArray(d.categories) ? d.categories : [] };
+        }
+      } catch (e) {}
+      return seedStore();
+    };
+    const store = reactive(loadStore());
+
+    // Úložiště: na WAMP/PHP serveru se ukládá do tangram-data.json vedle aplikace,
+    // jinak do prohlížeče a svítí kontrolka pro export.
+    const API = 'api.php';
+    const FLAG_KEY = STORE_KEY + '-unexported';
+    let flag = false, expAt = null;
+    try { flag = localStorage.getItem(FLAG_KEY) === '1'; expAt = +localStorage.getItem(FLAG_KEY + '-at') || null; } catch (e) {}
+    const storage = reactive({ mode:'checking', saving:false, error:'', unexported:flag, exportedAt:expAt });
+    const payload = () => ({ app:'tangram-studio', version:1, categories:store.categories, shapes:store.shapes });
+    const saveFlag = () => { try {
+      localStorage.setItem(FLAG_KEY, storage.unexported ? '1' : '0');
+      if (storage.exportedAt) localStorage.setItem(FLAG_KEY + '-at', String(storage.exportedAt));
+    } catch (e) {} };
+    const markExported = () => { storage.unexported = false; storage.exportedAt = Date.now(); saveFlag(); };
+    const exportState = computed(() => storage.unexported ? 'dirty' : (storage.exportedAt ? 'exported' : 'none'));
+    const writeLocal = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(payload())); return true; } catch (e) { return false; } };
+    async function persist() {
+      const okLocal = writeLocal();
+      if (storage.mode === 'server') {
+        storage.saving = true;
+        try {
+          const r = await fetch(API + '?action=save', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify(payload()) });
+          const j = await r.json();
+          if (!j.ok) throw new Error(j.error || 'write failed');
+          storage.error = '';
+          return true;
+        } catch (e) {
+          storage.error = String(e.message || e); storage.unexported = true; saveFlag();
+          return false;
+        } finally { storage.saving = false; }
+      }
+      storage.unexported = true; saveFlag();
+      return okLocal;
+    }
+    function applyData(d) {
+      store.shapes.splice(0, store.shapes.length, ...d.shapes.map(s => ({ ...s, pieces:normalizePieces(s.pieces) })));
+      store.categories.splice(0, store.categories.length, ...(Array.isArray(d.categories) ? d.categories : []));
+      writeLocal();
+    }
+    async function detectServer() {
+      if (location.protocol !== 'http:' && location.protocol !== 'https:') { storage.mode = 'local'; return; }
+      try {
+        const ctrl = new AbortController(), tm = setTimeout(() => ctrl.abort(), 2500);
+        const res = await fetch(API + '?action=load', { cache:'no-store', signal:ctrl.signal });
+        clearTimeout(tm);
+        if (!res.ok) throw 0;
+        const j = await res.json();
+        if (!j || j.ok !== true) throw 0;
+        storage.mode = 'server';
+        if (j.data && Array.isArray(j.data.shapes)) applyData(j.data);
+        else await persist();        // první spuštění: založí tangram-data.json
+      } catch (e) { storage.mode = 'local'; }
+    }
+
+    const page = ref('tangram');
+    const tabs = ['gallery', 'tangram', 'print'];
+
+    // globální nastavení (drží se jen do obnovení stránky)
+    const settings = reactive({ rotStep:90, colorMode:'color', borders:true, grid:true, axes:true, snap:true, gap:0, snapRange:14 });
+    const stepVal = computed(() => clamp(Math.round(+settings.rotStep || 90), 10, 180));
+    const clampStep = () => { settings.rotStep = stepVal.value; };
+
+    // rozpracovaný obrazec
+    const doc = reactive({ id:null, name:t('doc.newName'), category:'', pieces:makePieces(1.6), savedAt:null });
+    const docKey = () => JSON.stringify({ n:doc.name, c:doc.category, p:doc.pieces });
+    const savedKey = ref(docKey());
+    const dirty = computed(() => docKey() !== savedKey.value);
+    const fmtTime = ts => new Date(ts).toLocaleTimeString(locale(), { hour:'2-digit', minute:'2-digit' });
+    const fmtDate = ts => new Date(ts).toLocaleDateString(locale(), { day:'numeric', month:'numeric', year:'numeric' });
+    const statusText = computed(() => !doc.id ? t('status.new') : (dirty.value ? t('status.dirty') : t('status.saved', { time:fmtTime(doc.savedAt) })));
+
+    const history = reactive({ undo:[], redo:[] });
+    const view = reactive({ cx:0, cy:0, scale:BASE_SCALE });
+    const V = () => view;
+    let fitted = false;
+
+    const selectedId = ref(null);
+    const sel = computed(() => doc.pieces.find(p => p.type === selectedId.value) || null);
+    const selDef = computed(() => sel.value ? DEF[sel.value.type] : null);
+    const pieceBy = tp => doc.pieces.find(p => p.type === tp) || { rot:0 };
+    const previewMode = ref('silhouette');
+    const fine = ref(1);
+
+    // historie změn
+    const snapshot = () => JSON.stringify(doc.pieces);
+    const pushHistoryRaw = s => { const h = history; h.undo.push(s); if (h.undo.length > 100) h.undo.shift(); h.redo.length = 0; };
+    const pushHistory = () => pushHistoryRaw(snapshot());
+    const undo = () => { const h = history; if (!h.undo.length) return; h.redo.push(snapshot()); doc.pieces = JSON.parse(h.undo.pop()); };
+    const redo = () => { const h = history; if (!h.redo.length) return; h.undo.push(snapshot()); doc.pieces = JSON.parse(h.redo.pop()); };
+
+    // toast a modal
+    const toastMsg = ref(''); let toastT;
+    const toast = m => { toastMsg.value = m; clearTimeout(toastT); toastT = setTimeout(() => toastMsg.value = '', 2600); };
+    const modal = reactive({ open:false, kind:'', title:'', text:'', okLabel:'', danger:false, textarea:'', error:'', importMode:'replace', resolve:null });
+    const ask = (title, text, okLabel, danger) => new Promise(res => Object.assign(modal, { open:true, kind:'confirm', title, text, okLabel, danger:!!danger, resolve:res }));
+    const closeModal = v => { const r = modal.resolve; modal.open = false; modal.resolve = null; if (r) r(v); };
+
+    /* ----- editor: pohled ----- */
+    const editorEl = ref(null), svgEl = ref(null), catInput = ref(null);
+    const size = reactive({ w:800, h:600 });
+    const vb = computed(() => {
+      const w = Math.max(size.w, 50), h = Math.max(size.h, 50), v = view, s = v.scale;
+      return { x:v.cx - w / 2 / s, y:v.cy - h / 2 / s, w:w / s, h:h / s };
+    });
+    const viewBox = computed(() => vb.value.x + ' ' + vb.value.y + ' ' + vb.value.w + ' ' + vb.value.h);
+    const zoomPct = computed(() => Math.round(view.scale / BASE_SCALE * 100));
+    const gridD = computed(() => {
+      const v = vb.value, s = view.scale;
+      const mk = step => {
+        let d = '';
+        for (let x = Math.floor(v.x / step) * step; x <= v.x + v.w; x += step) d += 'M' + x + ' ' + v.y + 'V' + (v.y + v.h);
+        for (let y = Math.floor(v.y / step) * step; y <= v.y + v.h; y += step) d += 'M' + v.x + ' ' + y + 'H' + (v.x + v.w);
+        return d;
+      };
+      const minor = s * 25 >= 9 ? 25 : (s * 50 >= 9 ? 50 : 0);
+      return { fine: s * 5 >= 10 ? mk(5) : '', minor: minor ? mk(minor) : '', major: mk(s * 100 >= 7 ? 100 : 500) };
+    });
+    const zoomBy = f => { V().scale = clamp(V().scale * f, ZOOM_MIN, ZOOM_MAX); };
+    const resetView = () => { const v = V(); v.cx = 0; v.cy = 0; v.scale = BASE_SCALE; };
+    const fitView = () => {
+      fitted = true;
+      const b = bboxOf(doc.pieces), w = Math.max(size.w, 300), h = Math.max(size.h, 300), pad = 70, v = V();
+      v.scale = clamp(Math.min((w - pad * 2) / b.w, (h - pad * 2) / b.h), ZOOM_MIN, 8);
+      v.cx = b.x + b.w / 2; v.cy = b.y + b.h / 2;
+    };
+    const toWorld = e => {
+      const r = svgEl.value.getBoundingClientRect(), v = V();
+      return { x:v.cx + (e.clientX - r.left - r.width / 2) / v.scale, y:v.cy + (e.clientY - r.top - r.height / 2) / v.scale };
+    };
+    const onWheel = e => {
+      e.preventDefault();
+      const v = V(), before = toWorld(e);
+      v.scale = clamp(v.scale * Math.exp(-e.deltaY * 0.0015), ZOOM_MIN, ZOOM_MAX);
+      const after = toWorld(e);
+      v.cx += before.x - after.x; v.cy += before.y - after.y;
+    };
+
+    /* ----- editor: díly ----- */
+    const pts = pointsStr;
+    const fillFor = p => settings.colorMode === 'color' ? DEF[p.type].color : PAPER;
+    const strokeFor = p => settings.borders ? MAT : fillFor(p);
+    const rotatePiece = (p, d) => { p.rot = normDeg(p.rot + d); };
+    const rotSel = d => { if (!sel.value) return; pushHistory(); rotatePiece(sel.value, d); };
+    const flipSel = () => { if (!sel.value || !selDef.value.flippable) return; pushHistory(); sel.value.flip = !sel.value.flip; };
+    const setField = (f, raw) => {
+      const n = parseFloat(String(raw).replace(',', '.'));
+      if (!isFinite(n) || !sel.value) return;
+      pushHistory();
+      if (f === 'y') sel.value.y = -n; else if (f === 'rot') sel.value.rot = normDeg(n); else sel.value.x = n;
+    };
+    // Posune celý obrazec (všechny díly jako skupinu) tak, aby střed jeho obrysu ležel v počátku os
+    const centerShape = () => {
+      const b = bboxOf(doc.pieces), cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+      if (Math.abs(cx) < 0.01 && Math.abs(cy) < 0.01) { view.cx = 0; view.cy = 0; return; }
+      pushHistory();
+      doc.pieces.forEach(p => { p.x = r2(p.x - cx); p.y = r2(p.y - cy); });
+      view.cx = 0; view.cy = 0;
+    };
+    const scatterPieces = () => { pushHistory(); doc.pieces = makePieces(1.6); };
+    const squarePieces = () => { pushHistory(); doc.pieces = makePieces(1); };
+
+    const cursor = ref(null), snapPoint = ref(null), dragState = ref(null);
+    let drag = null;
+    const capture = e => { try { svgEl.value.setPointerCapture(e.pointerId); } catch (_) {} };
+    function onPiecePointerDown(e, p) {
+      if (e.button !== 0) return;               // prostřední tlačítko propadne na posun plochy
+      e.stopPropagation();
+      const snap = snapshot(), arr = doc.pieces;
+      selectedId.value = p.type;
+      const i = arr.indexOf(p);                 // přetahovaný díl dopředu
+      if (i > -1 && i < arr.length - 1) { arr.splice(i, 1); arr.push(p); }
+      drag = { kind:'piece', piece:p, sx:e.clientX, sy:e.clientY, px:p.x, py:p.y, moved:false, ctrl:e.ctrlKey || e.metaKey, snap };
+      capture(e);
+    }
+    function onBgPointerDown(e) {
+      if (e.button !== 0 && e.button !== 1) return;
+      if (e.button === 1) e.preventDefault();
+      drag = { kind:'pan', sx:e.clientX, sy:e.clientY, cx:V().cx, cy:V().cy, moved:false, button:e.button };
+      capture(e);
+    }
+    function onPointerMove(e) {
+      cursor.value = toWorld(e);
+      if (!drag) return;
+      const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy, v = V();
+      if (!drag.moved && Math.hypot(dx, dy) > 4) { drag.moved = true; dragState.value = drag.kind; }
+      if (!drag.moved) return;
+      if (drag.kind === 'pan') { v.cx = drag.cx - dx / v.scale; v.cy = drag.cy - dy / v.scale; return; }
+      const p = drag.piece;
+      p.x = drag.px + dx / v.scale; p.y = drag.py + dy / v.scale;
+      snapPoint.value = null;
+      if (settings.snap) {
+        const others = doc.pieces.filter(o => o !== p);
+        const s = computeSnap(p, others, +settings.gap || 0, (+settings.snapRange || 14) / v.scale);
+        if (s) { p.x += s.dx; p.y += s.dy; snapPoint.value = s.point; }
+      }
+    }
+    function onPointerUp(e) {
+      const d = drag; drag = null; dragState.value = null; snapPoint.value = null;
+      if (!d) return;
+      try { svgEl.value.releasePointerCapture(e.pointerId); } catch (_) {}
+      if (d.kind === 'pan') { if (!d.moved && d.button === 0) selectedId.value = null; return; }
+      pushHistoryRaw(d.snap);
+      if (!d.moved) rotatePiece(d.piece, (d.ctrl ? -1 : 1) * stepVal.value);
+      else { d.piece.x = r2(d.piece.x); d.piece.y = r2(d.piece.y); }
+    }
+    function onPieceContext(e, p) {
+      if (e.ctrlKey) return;                    // Ctrl+klik na Macu už otočil pointerdown
+      selectedId.value = p.type; pushHistory(); rotatePiece(p, -stepVal.value);
+    }
+
+    /* ----- ukládání a načítání ----- */
+    function loadInto(s) {
+      doc.id = s ? s.id : null;
+      doc.name = s ? s.name : t('doc.newName');
+      doc.category = s ? (s.category || '') : '';
+      doc.pieces = s ? JSON.parse(JSON.stringify(s.pieces)) : makePieces(1.6);
+      doc.savedAt = s ? s.updated : null;
+      savedKey.value = docKey();
+      history.undo = []; history.redo = []; selectedId.value = null;
+    }
+    async function confirmLeave() {
+      if (!dirty.value) return true;
+      return ask(t('dlg.unsavedTitle'), t('dlg.unsavedText'), t('dlg.discard'), true);
+    }
+    function goPage(id) {
+      if (id !== page.value) { selectedId.value = null; drag = null; dragState.value = null; }
+      page.value = id;
+      if (id === 'tangram') nextTick(() => { if (!fitted) fitView(); });
+    }
+    async function newShape() {
+      if (!(await confirmLeave())) return;
+      loadInto(null); goPage('tangram'); nextTick(fitView);
+    }
+    async function openShape(s) {
+      if (doc.id === s.id) { goPage('tangram'); return; }
+      if (!(await confirmLeave())) return;
+      loadInto(s); goPage('tangram'); nextTick(fitView);
+    }
+    function saveDoc() {
+      const name = doc.name.trim() || t('doc.untitled');
+      doc.name = name;
+      const now = Date.now();
+      const pieces = doc.pieces.map(p => ({ type:p.type, x:r2(p.x), y:r2(p.y), rot:normDeg(p.rot), flip:!!p.flip }));
+      let s = doc.id && store.shapes.find(x => x.id === doc.id);
+      if (s) Object.assign(s, { name, category:doc.category, pieces, updated:now });
+      else { s = { id:uid(), name, category:doc.category, pieces, created:now, updated:now }; store.shapes.push(s); doc.id = s.id; }
+      doc.savedAt = now; savedKey.value = docKey();
+      persist().then(ok => toast(!ok ? t('toast.saveFail') : t(storage.mode === 'server' ? 'toast.savedServer' : 'toast.savedLocal', { name })));
+    }
+    const docJson = computed(() => JSON.stringify({
+      id:doc.id, name:doc.name, category:doc.category,
+      pieces:doc.pieces.map(p => ({ type:p.type, x:r2(p.x), y:r2(p.y), rot:normDeg(p.rot), flip:!!p.flip })),
+    }, null, 2));
+    const docSize = computed(() => { const b = bboxOf(doc.pieces); return { w:Math.round(b.w), h:Math.round(b.h) }; });
+
+    // kategorie
+    const catAdd = reactive({ open:false, value:'' });
+    const openCatAdd = () => { catAdd.open = true; catAdd.value = ''; nextTick(() => catInput.value && catInput.value.focus()); };
+    const confirmCategory = () => {
+      const v = catAdd.value.trim();
+      if (!v) return;
+      if (!store.categories.includes(v)) { store.categories.push(v); persist(); }
+      doc.category = v; catAdd.open = false;
+      toast(t('toast.catReady', { name:v }));
+    };
+
+    /* ----- generátor (okno s náhodnými tvary) ----- */
+    const gen = reactive({ items:[], count:6, style:'compact', thumb:'silhouette' });
+    const makeGenItem = () => ({ key:uid(), pieces:generateShape(gen.style) });
+    const generateAll = () => { gen.items = Array.from({ length:gen.count }, makeGenItem); };
+    const rerollGenerated = it => { it.pieces = generateShape(gen.style); };
+    function openGenerator() {
+      if (!gen.items.length) generateAll();
+      Object.assign(modal, { open:true, kind:'generator', title:t('gen.title'), error:'' });
+    }
+    async function useGenerated(it) {
+      closeModal(false);
+      if (!(await confirmLeave())) return;
+      loadInto(null);
+      doc.pieces = JSON.parse(JSON.stringify(it.pieces));   // nový, zatím neuložený obrazec
+      nextTick(fitView);
+    }
+
+    /* ----- galerie ----- */
+    const gal = reactive({ q:'', cat:'', sort:'updated', thumb:'silhouette' });
+    const galleryShapes = computed(() => {
+      const q = gal.q.trim().toLowerCase();
+      const list = store.shapes.filter(s => (!q || s.name.toLowerCase().includes(q)) &&
+        (gal.cat === '' || (gal.cat === '__none' ? !s.category : s.category === gal.cat)));
+      if (gal.sort === 'name') list.sort((a, b) => a.name.localeCompare(b.name, lang.value));
+      else if (gal.sort === 'created') list.sort((a, b) => a.created - b.created);
+      else list.sort((a, b) => b.updated - a.updated);
+      return list;
+    });
+    function duplicateShape(s) {
+      const now = Date.now();
+      store.shapes.push({ ...JSON.parse(JSON.stringify(s)), id:uid(), name:t('gal.copyName', { name:s.name }), created:now, updated:now });
+      persist(); toast(t('toast.copyMade', { name:s.name }));
+    }
+    const printSel = ref([]);
+    async function deleteShape(s) {
+      if (!(await ask(t('dlg.deleteTitle'), t('dlg.deleteText', { name:s.name }), t('dlg.delete'), true))) return;
+      store.shapes.splice(store.shapes.indexOf(s), 1);
+      printSel.value = printSel.value.filter(id => id !== s.id);
+      if (doc.id === s.id) doc.id = null;
+      persist(); toast(t('toast.deleted'));
+    }
+    const togglePrint = id => { const i = printSel.value.indexOf(id); if (i < 0) printSel.value.push(id); else printSel.value.splice(i, 1); };
+
+    function openExport() {
+      Object.assign(modal, { open:true, kind:'export', title:t('exp.title'), error:'',
+        text:t('exp.text', { count:tn('shapes', store.shapes.length) }),
+        textarea:JSON.stringify(payload(), null, 2) });
+    }
+    function download(name, text) {
+      try {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([text], { type:'application/json' }));
+        a.download = name; document.body.appendChild(a); a.click(); a.remove();
+        markExported();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+      } catch (e) { toast(t('toast.dlFail')); }
+    }
+    function copyExport() {
+      if (!navigator.clipboard) { toast(t('toast.clipNA')); return; }
+      navigator.clipboard.writeText(modal.textarea).then(() => { markExported(); toast(t('toast.copied')); })
+        .catch(() => toast(t('toast.clipBlocked')));
+    }
+    function openImport() { Object.assign(modal, { open:true, kind:'import', title:t('imp.title'), textarea:'', error:'', importMode:'replace' }); }
+    function onImportFile(e) {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      const rd = new FileReader();
+      rd.onload = () => { modal.textarea = String(rd.result); modal.error = ''; };
+      rd.readAsText(f);
+    }
+    function doImport() {
+      let data;
+      try { data = JSON.parse(modal.textarea); }
+      catch (err) { modal.error = t('imp.errJson'); return; }
+      const list = Array.isArray(data) ? data : (data && Array.isArray(data.shapes) ? data.shapes : (data && data.pieces ? [data] : null));
+      if (!list || !list.length) { modal.error = t('imp.errEmpty'); return; }
+      const replace = modal.importMode === 'replace';
+      const ids = new Set(replace ? [] : store.shapes.map(s => s.id)), now = Date.now();
+      const cats = replace ? [] : store.categories.slice();
+      const addCat = c => { if (typeof c === 'string' && c && !cats.includes(c)) cats.push(c); };
+      if (data && Array.isArray(data.categories)) data.categories.forEach(addCat);
+      const fresh = [];
+      for (const s of list) {
+        if (!s || !s.pieces) continue;
+        const id = s.id && !ids.has(s.id) ? s.id : uid(); ids.add(id);
+        const cat = typeof s.category === 'string' ? s.category : '';
+        addCat(cat);
+        fresh.push({ id, name:String(s.name || t('doc.untitled')), category:cat, pieces:normalizePieces(s.pieces), created:+s.created || now, updated:+s.updated || now });
+      }
+      if (replace) store.shapes.splice(0, store.shapes.length, ...fresh);
+      else store.shapes.push(...fresh);
+      store.categories.splice(0, store.categories.length, ...cats);
+      // odkazy na smazané obrazce
+      const exists = id => store.shapes.some(s => s.id === id);
+      if (doc.id && !exists(doc.id)) doc.id = null;
+      printSel.value = printSel.value.filter(exists);
+      closeModal(false);
+      persist().then(() => { if (replace && storage.mode === 'local') markExported(); });   // data teď odpovídají souboru
+      toast(t(replace ? 'toast.replaced' : 'toast.imported', { count:tn('shapes', fresh.length) }));
+    }
+
+    /* ----- tisk ----- */
+    const printOpts = reactive({ layout:'cards', style:'task', perCard:1, cropMarks:true, cardOutline:true, cardNumber:true, duplex:false,
+      perPage:4, sizeMode:'fit', sideMm:100, frame:true, showName:true, showCategory:false, colorSolution:false, catFilter:'' });
+    const printList = computed(() => store.shapes.filter(s => printOpts.catFilter === '' ||
+      (printOpts.catFilter === '__none' ? !s.category : s.category === printOpts.catFilter)));
+    const selectPrintList = () => { printList.value.forEach(s => { if (!printSel.value.includes(s.id)) printSel.value.push(s.id); }); };
+
+    // Jedna buňka s obrazcem uvnitř obdélníku box (vše v mm)
+    function cellFor(it, box, fs, pad, frame) {
+      const title = printOpts.showName ? it.s.name + (it.kind === 'solution' ? t('pr.solSuffix') : '') : (it.kind === 'solution' ? t('pr.solLabel') : '');
+      const sub = printOpts.showCategory ? (it.s.category || '') : '';
+      const sfs = fs * 0.75;
+      let head = 0, t1y = 0, t2y = 0;
+      if (title) { t1y = box.y + pad + fs; head = fs * 1.3; }
+      if (sub) { t2y = box.y + pad + head + sfs; head += sfs * 1.35; }
+      if (head) head += fs * 0.4;
+      const dx = box.x + pad, dy = box.y + pad + head;
+      const dw = Math.max(box.w - 2 * pad, 1), dh = Math.max(box.h - 2 * pad - head, 1);
+      const b = bboxOf(it.s.pieces), fit = Math.min(dw / b.w, dh / b.h);
+      let sc = fit, shrunk = false;
+      if (printOpts.layout === 'pages') {
+        sc = fit * 0.94;
+        if (printOpts.sizeMode === 'real') { const real = (+printOpts.sideMm || 100) / 200; if (real <= fit) sc = real; else { sc = fit; shrunk = true; } }
+      }
+      // dlouhý text: nejdřív zmenšit písmo, a když to nestačí, stlačit ho na šířku buňky
+      const maxW = box.w - 2 * pad - 1;
+      const fitText = (txt, size) => {
+        const est = txt.length * size * 0.56;
+        if (est <= maxW) return { fs:size, tl:null };
+        const smaller = Math.max(size * 0.7, maxW / (txt.length * 0.56));
+        return { fs:smaller, tl:txt.length * smaller * 0.56 > maxW ? maxW : null };
+      };
+      const tf = fitText(title, fs), sf = fitText(sub, sfs);
+      return { key:it.s.id + it.kind + '_' + box.x.toFixed(1) + '_' + box.y.toFixed(1), x:box.x, y:box.y, w:box.w, h:box.h,
+        cx:box.x + box.w / 2, frame, fs:tf.fs, tl:tf.tl, sfs:sf.fs, stl:sf.tl, title, sub, t1y, t2y, kind:it.kind, pieces:it.s.pieces, sc, shrunk,
+        tx:dx + (dw - b.w * sc) / 2 - b.x * sc, ty:dy + (dh - b.h * sc) / 2 - b.y * sc };
+    }
+    // Volné stránky (původní režim)
+    const LAYOUTS = { 1:[1,1], 2:[1,2], 4:[2,2], 6:[2,3], 8:[2,4], 10:[2,5], 12:[3,4] };
+    function sheetPages(items) {
+      const per = printOpts.perPage, [cols, rows] = LAYOUTS[per] || [2,2];
+      const M = 14, G = 6, areaW = 210 - 2 * M, areaH = 297 - 2 * M - 8;
+      const cw = (areaW - G * (cols - 1)) / cols, ch = (areaH - G * (rows - 1)) / rows;
+      const out = [];
+      items.forEach((it, i) => {
+        const pi = Math.floor(i / per), ci = i % per;
+        if (!out[pi]) out[pi] = { cells:[], frames:[], marks:null, footer:true };
+        const box = { x:M + (ci % cols) * (cw + G), y:M + Math.floor(ci / cols) * (ch + G), w:cw, h:ch };
+        const m = Math.min(cw, ch);              // menší buňky = menší písmo a okraje
+        out[pi].cells.push(cellFor(it, box, clamp(m * 0.06, 2.8, 4.4), clamp(m * 0.07, 3, 6), printOpts.frame));
+      });
+      return out;
+    }
+    // Karty 98 × 94,5 mm, 6 na A4
+    function cardPages(tasks, sols) {
+      const per = printOpts.perCard === 4 ? 4 : 1;
+      const chunk = arr => { const r = []; for (let i = 0; i < arr.length; i += per) r.push({ items:arr.slice(i, i + per), num:r.length + 1 }); return r; };
+      const tCards = chunk(tasks), sCards = chunk(sols);
+      const ox = (210 - CARD_W * 2) / 2, oy = (297 - CARD_H * 3) / 2;
+      const marks = [];
+      const L = 4, G = 1.2, xs = [ox, ox + CARD_W, ox + 2 * CARD_W], ys = [0, 1, 2, 3].map(k => oy + k * CARD_H);
+      xs.forEach(x => { marks.push([x, oy - G - L, x, oy - G]); marks.push([x, oy + 3 * CARD_H + G, x, oy + 3 * CARD_H + G + L]); });
+      ys.forEach(y => { marks.push([ox - G - L, y, ox - G, y]); marks.push([ox + 2 * CARD_W + G, y, ox + 2 * CARD_W + G + L, y]); });
+      const buildPage = (cards, mirror) => {
+        const pg = { cells:[], frames:[], marks:printOpts.cropMarks ? marks : null, footer:false };
+        cards.forEach((card, i) => {
+          let col = i % 2; const row = Math.floor(i / 2);
+          if (mirror) col = 1 - col;                  // zadní strana: sloupce zrcadlově
+          const fx = ox + col * CARD_W, fy = oy + row * CARD_H;
+          pg.frames.push({ key:'f' + i, x:fx, y:fy, w:CARD_W, h:CARD_H, num:card.num });
+          if (per === 1) pg.cells.push(cellFor(card.items[0], { x:fx, y:fy, w:CARD_W, h:CARD_H }, 3.6, 5, false));
+          else {
+            const pad = 3.5, g = 2, sw = (CARD_W - 2 * pad - g) / 2, sh = (CARD_H - 2 * pad - g) / 2;
+            card.items.forEach((it, j) => {
+              let sc = j % 2; const sr = Math.floor(j / 2);
+              if (mirror) sc = 1 - sc;
+              pg.cells.push(cellFor(it, { x:fx + pad + sc * (sw + g), y:fy + pad + sr * (sh + g), w:sw, h:sh }, 2.6, 1.5, false));
+            });
+          }
+        });
+        return pg;
+      };
+      const out = [];
+      if (printOpts.style === 'both' && printOpts.duplex) {
+        for (let i = 0; i < tCards.length; i += 6) { out.push(buildPage(tCards.slice(i, i + 6), false)); out.push(buildPage(sCards.slice(i, i + 6), true)); }
+      } else {
+        const all = tCards.concat(sCards);
+        for (let i = 0; i < all.length; i += 6) out.push(buildPage(all.slice(i, i + 6), false));
+      }
+      return out;
+    }
+    const pages = computed(() => {
+      const shapes = store.shapes.filter(s => printSel.value.includes(s.id));
+      const tasks = printOpts.style !== 'solution' ? shapes.map(s => ({ s, kind:'task' })) : [];
+      const sols = printOpts.style !== 'task' ? shapes.map(s => ({ s, kind:'solution' })) : [];
+      return printOpts.layout === 'cards' ? cardPages(tasks, sols) : sheetPages(tasks.concat(sols));
+    });
+    const printFill = (c, p) => c.kind === 'task' ? '#1f1f1f' : (printOpts.colorSolution ? DEF[p.type].color : '#ffffff');
+    const doPrint = () => { try { window.print(); } catch (e) { toast(t('toast.printFail')); } };
+
+    /* ----- klávesnice ----- */
+    function onKey(e) {
+      if (modal.open) { if (e.key === 'Escape') closeModal(false); return; }
+      if (page.value !== 'tangram') return;
+      const tag = (e.target.tagName || '').toLowerCase();
+      const typing = tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable;
+      const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+      if (mod && k === 's') { e.preventDefault(); saveDoc(); return; }
+      if (typing) return;
+      if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+      if (mod && k === 'y') { e.preventDefault(); redo(); return; }
+      if (mod) return;
+      if (e.key === 'Escape') { selectedId.value = null; return; }
+      if (e.key === '0') { resetView(); return; }
+      if (e.key === 'Home') { e.preventDefault(); fitView(); return; }
+      if (k === 'c') { centerShape(); return; }
+      const p = sel.value;
+      if (!p) return;
+      const st = e.shiftKey ? 10 : 1;
+      switch (e.key) {
+        case 'ArrowLeft':  pushHistory(); p.x = r2(p.x - st); break;
+        case 'ArrowRight': pushHistory(); p.x = r2(p.x + st); break;
+        case 'ArrowUp':    pushHistory(); p.y = r2(p.y - st); break;
+        case 'ArrowDown':  pushHistory(); p.y = r2(p.y + st); break;
+        default:
+          if (k === 'q') rotSel(-stepVal.value);
+          else if (k === 'e' || k === 'r') rotSel(stepVal.value);
+          else if (k === 'f') flipSel();
+          else return;
+      }
+      e.preventDefault();
+    }
+    const beforeUnload = e => { if (dirty.value) { e.preventDefault(); e.returnValue = ''; } };
+
+    let ro;
+    onMounted(() => {
+      ro = new ResizeObserver(() => {
+        const r = editorEl.value.getBoundingClientRect();
+        if (r.width > 0) { size.w = r.width; size.h = r.height; }
+        if (!fitted && r.width > 50) fitView();
+      });
+      ro.observe(editorEl.value);
+      svgEl.value.addEventListener('wheel', onWheel, { passive:false });
+      window.addEventListener('keydown', onKey);
+      window.addEventListener('beforeunload', beforeUnload);
+      detectServer();
+    });
+    onBeforeUnmount(() => {
+      ro && ro.disconnect();
+      window.removeEventListener('keydown', onKey); window.removeEventListener('beforeunload', beforeUnload);
+    });
+
+    const fmtN = v => String(r2(v));
+    const fmtDec = v => lang.value === 'cs' ? String(v).replace('.', ',') : String(v);
+    const fmtDeg = v => fmtDec(r2(v)) + '°';
+
+    return {
+      t, tn, lang, langs:LANGS, langCodes, setLang,
+      store, page, tabs, settings, stepVal, clampStep, doc, dirty, statusText, selectedId, sel, selDef, pieceBy,
+      previewMode, fine, history, pushHistory, undo, redo, toastMsg, modal, closeModal,
+      editorEl, svgEl, catInput, view, vb, viewBox, zoomPct, gridD, zoomBy, resetView, fitView,
+      pts, fillFor, strokeFor, rotSel, flipSel, setField, centerShape, scatterPieces, squarePieces, normDeg,
+      cursor, snapPoint, dragState, onPiecePointerDown, onBgPointerDown, onPointerMove, onPointerUp, onPieceContext,
+      goPage, newShape, openShape, saveDoc, docJson, docSize, catAdd, openCatAdd, confirmCategory,
+      gen, generateAll, rerollGenerated, openGenerator, useGenerated,
+      gal, galleryShapes, duplicateShape, deleteShape, printSel, togglePrint,
+      openExport, download, copyExport, openImport, onImportFile, doImport,
+      printOpts, pages, printFill, printList, selectPrintList, storage, exportState, fmtTime, CARD_W, CARD_H,
+      doPrint, fmtDate, fmtN, fmtDec, fmtDeg,
+      pieceDefs:PIECE_DEFS, logoPieces:makePieces(1),
+    };
+  },
+}).mount('#app');
+</script>
+</body>
+</html>
